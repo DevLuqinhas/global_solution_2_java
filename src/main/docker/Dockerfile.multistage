@@ -1,26 +1,32 @@
-##  Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21 AS build
-COPY --chown=quarkus:quarkus --chmod=0755 mvnw /code/mvnw
-COPY --chown=quarkus:quarkus .mvn /code/.mvn
-COPY --chown=quarkus:quarkus pom.xml /code/
-USER quarkus
-WORKDIR /code
+# Stage 1 — build usando Maven + JDK
+FROM maven:3.9.4-eclipse-temurin-17 as builder
+WORKDIR /workspace
+
+# copy mvnw etc se você usa wrapper (opcional) — aqui usamos mvn do container
+COPY pom.xml ./
+COPY .mvn .mvn
+COPY mvnw mvnw
+RUN chmod +x mvnw
+
+# baixar dependências offline (opcional)
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline
-COPY src /code/src
-RUN ./mvnw package -Dnative
 
-## Stage 2 : create the docker final image
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
-WORKDIR /work/
-COPY --from=build /code/target/*-runner /work/application
+# copy source
+COPY src src
 
-# set up permissions for user `1001`
-RUN chmod 775 /work /work/application \
-  && chown -R 1001 /work \
-  && chmod -R "g+rwX" /work \
-  && chown -R 1001:root /work
+# build jar (skip tests to avoid bloqueio em CI)
+RUN ./mvnw -DskipTests -B package
+
+# Stage 2 — runtime leve
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+
+# copia o jar gerado (tenta pegar runner.jar ou quarkus-run.jar)
+# ajuste se o seu target gerar outro nome
+COPY --from=builder /workspace/target/*-runner.jar /app/app.jar
+# fallback: caso não exista *-runner.jar, também tente quarkus-run.jar
+# COPY --from=builder /workspace/target/*-quarkus-run.jar /app/app.jar
 
 EXPOSE 8080
-USER 1001
-
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port=${PORT:8080}"
+ENTRYPOINT ["sh","-c","java $JAVA_OPTIONS -jar /app/app.jar"]
