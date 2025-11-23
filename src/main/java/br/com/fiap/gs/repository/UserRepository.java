@@ -11,16 +11,19 @@ public class UserRepository {
     public Long salvarRetornandoId(User user) throws SQLException {
         String sql = "INSERT INTO USERS (NOME, EMAIL, SENHA_HASH) VALUES (?, ?, ?)";
         try (Connection con = cf.getConnection();
-             PreparedStatement st = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement st = con.prepareStatement(sql, new String[] { "ID_USUARIO" })) {
             st.setString(1, user.getNome());
             st.setString(2, user.getEmail());
             st.setString(3, user.getSenhaHash());
             st.executeUpdate();
             try (ResultSet keys = st.getGeneratedKeys()) {
-                if (keys.next()) return keys.getLong(1);
+                if (keys != null && keys.next()) {
+                    // dependendo do driver, pode ser getLong(1) ou getLong("ID_USUARIO")
+                    return keys.getLong(1);
+                }
             }
         }
-        // fallback
+        // fallback (robusto)
         User p = buscarPorEmail(user.getEmail());
         return p != null ? p.getId() : null;
     }
