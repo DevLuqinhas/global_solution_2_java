@@ -56,6 +56,7 @@ public class UserBusiness {
         st.setCreatedAt(new Date());
         st.setExpiresAt(expires);
         sessionRepo.salvar(st);
+        System.out.println("[UserBusiness] nova sessao criada: token=" + token + " userId=" + userId + " expires=" + expires);
         return token;
     }
 

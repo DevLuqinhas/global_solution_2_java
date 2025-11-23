@@ -27,14 +27,20 @@ public class SessionRepository {
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) {
                     Timestamp exp = rs.getTimestamp("EXPIRES_AT");
+                    System.out.println("[SessionRepository] validarToken: token found=" + token + " user=" + rs.getLong("ID_USUARIO") + " expiresAt=" + exp);
                     if (exp != null && exp.after(new Timestamp(new Date().getTime()))) {
                         return rs.getLong("ID_USUARIO");
+                    } else {
+                        System.out.println("[SessionRepository] validarToken: token expired or invalid: " + token + " expiresAt=" + exp);
                     }
+                } else {
+                    System.out.println("[SessionRepository] validarToken: token NOT FOUND: " + token);
                 }
             }
         }
         return null;
     }
+
 
     public void deletar(String token) throws SQLException {
         String sql = "DELETE FROM SESSION_TOKENS WHERE TOKEN = ?";
