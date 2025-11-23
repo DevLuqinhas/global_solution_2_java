@@ -1,9 +1,4 @@
-target/
-!.mvn
-!.mvn/wrapper
-!.mvn/wrapper/maven-wrapper.jar
-!.mvn/wrapper/maven-wrapper.properties
-!.mvn/wrapper/maven-wrapper
-!.mvn/wrapper/*
+!target/*-runner
 !target/*-runner.jar
-!target/*-quarkus-run.jar
+!target/lib/*
+!target/quarkus-app/*
