@@ -1,6 +1,6 @@
 package br.com.fiap.gs.business;
 
-import br.com.fiap.gs.model.ContatoDTO;
+import br.com.fiap.gs.dto.ContatoDTO;
 
 public class ContatoBusiness {
 

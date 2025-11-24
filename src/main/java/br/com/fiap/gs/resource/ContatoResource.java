@@ -1,7 +1,7 @@
 package br.com.fiap.gs.resource;
 
 import br.com.fiap.gs.model.Contato;
-import br.com.fiap.gs.model.ContatoDTO;
+import br.com.fiap.gs.dto.ContatoDTO;
 import br.com.fiap.gs.repository.ContatoRepository;
 import br.com.fiap.gs.business.ContatoBusiness;
 import jakarta.ws.rs.*;
