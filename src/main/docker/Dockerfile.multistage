@@ -1,31 +1,26 @@
-## Stage 1 : build with maven builder image with native capabilities
+# Stage 1 - build (JVM)
 FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21 AS build
-COPY --chown=quarkus:quarkus --chmod=0755 mvnw /code/mvnw
+COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
-COPY --chown=quarkus:quarkus pom.xml /code/
+COPY pom.xml /code/
 USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline
 COPY src /code/src
-# build: skip tests to avoid DevServices/docker dependency during docker build
-RUN ./mvnw -DskipTests package -Dnative
+# build in JVM mode (não nativo)
+RUN ./mvnw -DskipTests package
 
-
-## Stage 2 : create the docker final image
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
+# Stage 2 - runtime image (JRE slim)
+FROM eclipse-temurin:21-jre-jammy as runtime
 WORKDIR /work/
-COPY --from=build /code/target/*-runner /work/application
+# copia o fast-jar (quarkus-app)
+COPY --from=build /code/target/quarkus-app /work/quarkus-app
 
-
-# set up permissions for user `1001`
-RUN chmod 775 /work /work/application \
-&& chown -R 1001 /work \
-&& chmod -R "g+rwX" /work \
-&& chown -R 1001:root /work
-
-
+# Expose port
 EXPOSE 8080
+
+# run as non-root if quiser
 USER 1001
 
-
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+# executa o fast-jar
+CMD ["java","-jar","/work/quarkus-app/quarkus-run.jar","-Dquarkus.http.host=0.0.0.0"]
